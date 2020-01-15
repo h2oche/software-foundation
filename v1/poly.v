@@ -594,13 +594,18 @@ Example mult_3' : mult two three = plus three three.
 Proof. reflexivity. Qed.
 
 (* Exercise : church exp *)
-Definition exp (n m : cnat) : cnat. Admitted.
-Example exp_1 : exp two two = plus two two.
-Proof. (* FILL IN HERE *) Admitted.
+(* Definition cnat' := forall X : Type, (X -> X) -> X -> X.
+Definition exp (n m : cnat) : cnat :=
+  m
+  cnat
+  (mult n)
+  one.
 Example exp_2 : exp three zero = one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed.
+Example exp_1 : exp two two = plus two two.
+Proof. reflexivity. Qed.
 Example exp_3 : exp three two = plus (mult two (mult two two)) one.
-Proof. (* FILL IN HERE *) Admitted.
+Proof. reflexivity. Qed. *)
 
 End Church.
 
