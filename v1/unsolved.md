@@ -13,3 +13,13 @@
 - split_combine
 - filter_exercise
 - forall_exists_challenge
+
+
+# logic
+- evenb_double_conv
+- eqb_neq
+- eqb_list
+- forallb
+- excluded_middle_irrefutable
+- not_exists_dist
+- classical axioms
