@@ -23,3 +23,11 @@
 - excluded_middle_irrefutable
 - not_exists_dist
 - classical axioms
+
+# indprop
+- MStar''
+- pumping
+- filter_challenge_2
+- palindrome_converse
+- pigeonhole_principle
+- Extended Exercise: A Verified Regular-Expression Matcher
