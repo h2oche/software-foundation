@@ -31,3 +31,7 @@
 - palindrome_converse
 - pigeonhole_principle
 - Extended Exercise: A Verified Regular-Expression Matcher
+
+# imp
+- no_whiles_terminating
+- Additional Exercises
