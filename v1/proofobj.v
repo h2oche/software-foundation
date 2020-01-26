@@ -361,6 +361,7 @@ Proof.
   apply eq_refl.
   Show Proof.
 Qed.
+End MyEquality.
 
 (* Inversion, Again *)
 
