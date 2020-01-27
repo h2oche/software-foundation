@@ -901,7 +901,8 @@ Inductive no_whilesR: com -> Prop :=
 | no_while_Seq (c1 c2 : com) :
     no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CSeq c1 c2)
 | no_while_If (b : bexp) (c1 c2 : com) :
-    no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CIf b c1 c2).
+    no_whilesR c1 -> no_whilesR c2 -> no_whilesR (CIf b c1 c2)
+| no_while_While (b: bexp) (c : com) : False -> no_whilesR (CWhile b c).
 
 Theorem no_whiles_eqv:
   forall c, no_whiles c = true <-> no_whilesR c.
@@ -930,12 +931,14 @@ Proof.
         destruct (no_whiles c1) eqn:E.
         * assumption.
         * discriminate H.
+    - simpl in H. discriminate H.
   }
-  (* <- *)
   {
+    (* <- *)
     intros H. induction H; try reflexivity.
     - simpl. rewrite IHno_whilesR1. rewrite IHno_whilesR2. reflexivity.
     - simpl. rewrite IHno_whilesR1. rewrite IHno_whilesR2. reflexivity.
+    - destruct H.
   }
 Qed.
 
