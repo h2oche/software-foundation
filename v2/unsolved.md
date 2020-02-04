@@ -16,3 +16,5 @@
 - hoare_havoc_weakest
 - Further Exercises
 
+* HoareAsLogic.v
+- hoare_proof_complete

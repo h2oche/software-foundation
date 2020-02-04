@@ -79,7 +79,9 @@ Example sample_proof :
     (X ::= X + 1;; X ::= X + 2)
     (fun st:state => st X = 3).
 Proof.
-  eapply H_Seq; apply H_Asgn.
+  eapply H_Seq.
+    apply H_Asgn.
+    apply H_Asgn.
 Qed.
 
 (*
@@ -110,7 +112,20 @@ Print sample_proof.
 Theorem hoare_proof_sound : forall P c Q,
   hoare_proof P c Q -> {{P}} c {{Q}}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros P c Q Hproof.
+  induction Hproof.
+  - apply hoare_skip.
+  - apply hoare_asgn.
+  - apply hoare_seq with Q; assumption.
+  - apply hoare_if; assumption.
+  - apply hoare_while; assumption.
+  - eapply hoare_consequence_post.
+    eapply hoare_consequence_pre.
+    apply IHHproof.
+    assumption.
+    assumption.
+Qed.
+
 (** [] *)
 
 (** We can also use Coq's reasoning facilities to prove metatheorems
@@ -218,14 +233,23 @@ Definition wp (c:com) (Q:Assertion) : Assertion :=
 
 Lemma wp_is_precondition: forall c Q,
   {{wp c Q}} c {{Q}}.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros c Q.
+  unfold hoare_triple, wp.
+  intros st st' H1 H2.
+  apply (H2 st'). assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (wp_is_weakest)  *)
 
 Lemma wp_is_weakest: forall c Q P',
    {{P'}} c {{Q}} -> forall st, P' st -> wp c Q st.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros c Q P' Hhoare st H.
+  unfold wp. intros st' H'.
+  apply (Hhoare st st'); assumption.
+Qed.
 
 (** The following utility lemma will also be useful. *)
 
