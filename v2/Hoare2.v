@@ -255,15 +255,15 @@ These decorations were constructed as follows:
 
        {{ True }}
       TEST X <= Y THEN
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ X <= Y }} ->>
+          {{ Y = X + (Y - X) }}
         Z ::= Y - X
-          {{                         }}
+          {{ Y = X + Z }}
       ELSE
-          {{                         }} ->>
-          {{                         }}
+          {{ True /\ ~ (X <= Y) }} ->>
+          {{ X + Z = X + Z }}
         Y ::= X + Z
-          {{                         }}
+          {{ Y = X + Z }}
       FI
         {{ Y = X + Z }}
 *)
@@ -570,7 +570,20 @@ Proof.
     Write an informal decorated program showing that this procedure
     is correct. *)
 
-(* FILL IN HERE *)
+(* {{ X = m }} ->>
+    {{ X + Y = m [Y |-> 0] }}
+    Y ::= 0;;
+    {{ X + Y = m }}
+    WHILE ~(X = 0) DO
+      {{ X + Y = m /\ ~(X = 0) }} ->>
+      {{ (X - 1) + (Y + 1) = m }}
+      X ::= X - 1;;
+      {{ X + (Y + 1) = m }}
+      Y ::= Y + 1
+      {{ X + Y = m }}
+    END
+    {{ X + Y = m /\ X = 0 }} ->>
+    {{ Y = m }} *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string) := None.
@@ -594,8 +607,19 @@ Definition manual_grade_for_decorations_in_slow_assignment : option (nat*string)
     specification of [add_slowly]; then (informally) decorate the
     program accordingly. *)
 
-(* FILL IN HERE 
-
+(* 
+  {{X = m /\ Z = n}} ->>
+  {{X + Z = m + n}}
+  WHILE ~(X = 0) DO
+    {{X + Z = m + n /\ ~(X = 0)}} ->>
+    {{(X - 1) + (Z + 1) = m + n}}
+    Z ::= Z + 1;;
+    {{ (X - 1) + Z = m + n}} 
+    X ::= X - 1
+    {{X + Z = m + n}}
+  END
+  {{X + Z = m + n /\ (X = 0)}} ->>
+  {{Z = m + n}}
     [] *)
 
 (* ================================================================= *)
@@ -670,13 +694,38 @@ Proof.
 Qed.
 
 Theorem parity_correct : forall m,
-    {{ fun st => st X = m }}
+  {{ fun st => st X = m }}
   WHILE 2 <= X DO
     X ::= X - 2
   END
-    {{ fun st => st X = parity m }}.
+  {{ fun st => st X = parity m }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros m.
+  eapply hoare_consequence.
+  - apply (hoare_while (fun st => parity (st X) = parity m)).
+    eapply hoare_consequence_pre.
+    apply hoare_asgn.
+    unfold assert_implies, assn_sub, t_update, bassn.
+    simpl. intros st [H1 H2].
+    destruct (2 <=? st X) eqn:E.
+    + apply leb_iff in E. rewrite parity_ge_2.
+      assumption. assumption.
+    + rewrite leb_iff_conv in E. destruct (st X).
+      * simpl. simpl in H1. assumption.
+      * destruct n; try inversion H2.
+        omega.
+  - unfold assert_implies, assn_sub, t_update.
+    intros st H; subst; reflexivity.
+  - unfold assert_implies, assn_sub, t_update, bassn.
+    intros st [H1 H2].
+    apply not_true_is_false in H2. simpl in H2.
+    destruct (st X).
+    + simpl in H1. assumption.
+    + destruct n.
+      * simpl in H1. assumption.
+      * inversion H2.
+Qed.
+
 (** [] *)
 
 (* ================================================================= *)
@@ -842,18 +891,18 @@ Proof.
     well-defined on natural numbers.
 
     {{ X = m }} ->>
-    {{                                      }}
+    {{ X! * 1 = m! }}
   Y ::= 1;;
-    {{                                      }}
+    {{ X! * Y = m! }}
   WHILE ~(X = 0)
-  DO   {{                                      }} ->>
-       {{                                      }}
+  DO   {{ X! * Y = m! /\ ~ (X = 0) }} ->>
+       {{ (X - 1)! * (Y * X) = m! }}
      Y ::= Y * X;;
-       {{                                      }}
+       {{ (X - 1)! * Y = m! }}
      X ::= X - 1
-       {{                                      }}
+       {{ X! * Y = m! }}
   END
-    {{                                      }} ->>
+    {{ X! * Y = m! /\ X = 0 }} ->>
     {{ Y = m! }}
 *)
 
@@ -1036,21 +1085,21 @@ Definition is_wp P c Q :=
     What are the weakest preconditions of the following commands
    for the following postconditions?
 
-  1) {{ ? }}  SKIP  {{ X = 5 }}
+  1) {{ True }}  SKIP  {{ X = 5 }}
 
-  2) {{ ? }}  X ::= Y + Z {{ X = 5 }}
+  2) {{ Y + Z = 5 }}  X ::= Y + Z {{ X = 5 }}
 
-  3) {{ ? }}  X ::= Y  {{ X = Y }}
+  3) {{ True }}  X ::= Y  {{ X = Y }}
 
-  4) {{ ? }}
+  4) {{ (X = 0 /\ Z = 4) \/ (~(X = 0) /\ W = 3) \/ (Z = 4 /\ W = 3) }}
      TEST X = 0 THEN Y ::= Z + 1 ELSE Y ::= W + 2 FI
      {{ Y = 5 }}
 
-  5) {{ ? }}
+  5) {{ False }}
      X ::= 5
      {{ X = 0 }}
 
-  6) {{ ? }}
+  6) {{ True }}
      WHILE true DO X ::= 0 END
      {{ X = 0 }}
 *)
@@ -1068,7 +1117,28 @@ Theorem is_wp_example :
   is_wp (fun st => st Y <= 4)
     (X ::= Y + 1) (fun st => st X <= 5).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold is_wp.
+  split.
+  - eapply hoare_consequence_pre.
+    apply hoare_asgn.
+    unfold assert_implies, assn_sub, t_update.
+    simpl. intros st H.
+    omega.
+  - unfold hoare_triple.
+    intros P Hhoare.
+    unfold assert_implies.
+    intros st HP.
+    remember (X !-> (aeval st (st Y + 1)); st) as st'.
+    assert (Haux: st' X <= 5 -> st Y <= 4).
+    {
+      intros H. rewrite Heqst' in H. rewrite t_update_eq in H.
+      simpl in H. omega.
+    }
+    apply Haux.
+    apply (Hhoare st st').
+    + rewrite Heqst'. apply E_Ass. simpl. reflexivity.
+    + assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_asgn_weakest)  
@@ -1079,7 +1149,20 @@ Proof.
 Theorem hoare_asgn_weakest : forall Q X a,
   is_wp (Q [X |-> a]) (X ::= a) Q.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros Q X a.
+  unfold is_wp.
+  split.
+  - apply hoare_asgn.
+  - intros P' Hhoare.
+    unfold assert_implies, assn_sub.
+    intros st H.
+    remember (X !-> (aeval st a); st) as st'.
+    unfold hoare_triple in Hhoare.
+    apply (Hhoare st st').
+    + rewrite Heqst'.
+      apply E_Ass. reflexivity.
+    + assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_havoc_weakest)  

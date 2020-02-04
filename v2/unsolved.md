@@ -8,3 +8,11 @@
 * Hoare.v
 - hoare_repeat
 - Additional Exercises
+
+* Hoare2.v
+- Min_Hoare
+- two_loops
+- dpow2_down
+- hoare_havoc_weakest
+- Further Exercises
+
