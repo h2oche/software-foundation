@@ -18,3 +18,7 @@
 
 * HoareAsLogic.v
 - hoare_proof_complete
+
+* SmallStep
+- combined_properties
+- compiler_is_correct
