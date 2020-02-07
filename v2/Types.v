@@ -181,7 +181,17 @@ Hint Unfold stuck.
 Example some_term_is_stuck :
   exists t, stuck t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists (scc tru).
+  unfold stuck. split.
+  - unfold step_normal_form, normal_form.
+    intros [t' contra].
+    inversion contra; subst.
+    inversion H0.
+  - intros contra. inversion contra.
+    + inversion H.
+    + inversion H; subst.
+      inversion H1.
+Qed.
 (** [] *)
 
 (** However, although values and normal forms are _not_ the same in
@@ -193,7 +203,32 @@ Proof.
 Lemma value_is_nf : forall t,
   value t -> step_normal_form t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t H.
+  induction t.
+  - inversion H; subst;
+      inversion H0; subst;
+      unfold step_normal_form;
+      intros [t' contra]; inversion contra.
+  - inversion H; subst;
+      inversion H0; subst;
+      unfold step_normal_form;
+      intros [t' contra]; inversion contra.
+  - inversion H; subst; inversion H0; subst.
+  - unfold step_normal_form; intros [t' contra]; inversion contra.
+  - unfold step_normal_form. intros [t' contra]. inversion H.
+    + inversion H0.
+    + inversion H0; subst.
+      inversion contra; subst.
+      apply IHt.
+      * right. apply H2.
+      * exists t1'. assumption.
+  - unfold step_normal_form. intros [t' contra]. inversion H.
+    + inversion H0.
+    + inversion H0; subst.
+  - unfold step_normal_form. intros [t' contra]. inversion H.
+    + inversion H0.
+    + inversion H0.
+Qed.
 
 (** (Hint: You will reach a point in this proof where you need to
     use an induction to reason about a term that is known to be a
@@ -213,7 +248,65 @@ Proof.
 Theorem step_deterministic:
   deterministic step.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros x y1 y2 H1.
+  generalize dependent y2.
+  induction H1; intros.
+  - inversion H; subst.
+    + reflexivity.
+    + inversion H4.
+  - inversion H; subst.
+    + reflexivity.
+    + inversion H4.
+  - inversion H; subst.
+    + inversion H1.
+    + inversion H1.
+    + apply (IHstep t1'0) in H5. subst. reflexivity.
+  - inversion H; subst.
+    apply (IHstep t1'0) in H2. subst. reflexivity.
+  - inversion H; subst.
+    + reflexivity.
+    + inversion H1.
+  - inversion H0; subst.
+    + reflexivity.
+    + assert (H': value t1).
+    { right. assumption. }
+      apply value_is_nf in H'. unfold step_normal_form in *.
+      exfalso. apply H'.
+      inversion H2; subst.
+      exists t1'0. assumption.
+  - inversion H; subst.
+    + inversion H1.
+    + assert (Haux : value y2).
+    { right. assumption. }
+      apply value_is_nf in Haux.
+      inversion H1; subst.
+      unfold step_normal_form in Haux.
+      exfalso. apply Haux.
+      exists t1'0. assumption.
+    + apply (IHstep t1'0) in H2. subst. reflexivity.
+  - inversion H; subst.
+    + reflexivity.
+    + inversion H1.
+  - inversion H0; subst.
+    + reflexivity.
+    + assert (H' : value t1).
+    { right. apply H. }
+      apply value_is_nf in H'.
+      exfalso. apply H'.
+      inversion H2; subst.
+      exists t1'0.
+      assumption.
+  - inversion H; subst.
+    + inversion H1.
+    + assert (H': value t0).
+    { right. assumption. }
+      apply value_is_nf in H'.
+      exfalso. apply H'.
+      inversion H1; subst.
+      exists t1'0.
+      assumption.
+    + apply (IHstep t1'0) in H2. subst. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -321,7 +414,8 @@ Example scc_hastype_nat__hastype_nat : forall t,
   |- scc t \in Nat ->
   |- t \in Nat.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t H. inversion H; subst. assumption.
+Qed.
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -379,7 +473,25 @@ Proof with auto.
     + (* t1 can take a step *)
       inversion H as [t1' H1].
       exists (test t1' t2 t3)...
-  (* FILL IN HERE *) Admitted.
+  - inversion IHHT; clear IHHT.
+    + left. apply nat_canonical in HT...
+    + inversion H as [t1' H1].
+      right. exists (scc t1')...
+  - inversion IHHT; clear IHHT.
+    apply nat_canonical in HT... clear H.
+    + right. inversion HT; subst.
+      * exists zro...
+      * exists t...
+    + inversion H as [t1' H1].
+      right. exists (prd t1')...
+  - inversion IHHT; clear IHHT.
+    apply nat_canonical in HT... clear H.
+    + right. inversion HT; subst.
+      * exists tru...
+      * exists fls...
+    + right. inversion H as [t1' H1].
+      exists (iszro t1')...
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_progress_informal)  
@@ -448,7 +560,14 @@ Proof with auto.
       + (* ST_TestFls *) assumption.
       + (* ST_Test *) apply T_Test; try assumption.
         apply IHHT1; assumption.
-    (* FILL IN HERE *) Admitted.
+    - inversion HE; subst; clear HE.
+      apply IHHT in H0...
+    - inversion HE; subst; clear HE.
+      + assumption.
+      + inversion HT; subst...
+      + apply IHHT in H0...
+    - inversion HE; subst; clear HE...
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_preservation_informal)  
@@ -499,7 +618,13 @@ Theorem preservation' : forall t t' T,
   t --> t' ->
   |- t' \in T.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros t t' T HT HE.
+  generalize dependent T.
+  induction HE;
+    intros T HT;
+    try (inversion HT; subst; auto).
+  - inversion H1...
+Qed.
 (** [] *)
 
 (** The preservation theorem is often called _subject reduction_,
@@ -539,8 +664,11 @@ Proof.
     not, give a counter-example.  (You do not need to prove your
     counter-example in Coq, but feel free to do so.)
 
-    (* FILL IN HERE *)
+    No.
+    test tru tru zro --> tru, |- tru \in Bool
+    But, test tru tru zro isn't typable.
 *)
+
 (* Do not modify the following line: *)
 Definition manual_grade_for_subject_expansion : option (nat*string) := None.
 (** [] *)
@@ -558,11 +686,11 @@ Definition manual_grade_for_subject_expansion : option (nat*string) := None.
    else "becomes false." If a property becomes false, give a
    counterexample.
       - Determinism of [step]
-            (* FILL IN HERE *)
+            (* remains true *)
       - Progress
-            (* FILL IN HERE *)
+            (* false (scc tru) *)
       - Preservation
-            (* FILL IN HERE *)
+            (* remains true *)
 *)
 (* Do not modify the following line: *)
 Definition manual_grade_for_variation1 : option (nat*string) := None.
@@ -577,6 +705,7 @@ Definition manual_grade_for_variation1 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
+   - determinism of [step] : test tru tru fls
             (* FILL IN HERE *)
 *)
 (* Do not modify the following line: *)
@@ -593,8 +722,7 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-            (* FILL IN HERE *)
-
+    - determinism of [step] : test (test tru tru tru) (test tru tru tru) fls
     [] *)
 
 (** **** Exercise: 2 stars, standard, optional (variation4)  
@@ -606,7 +734,7 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-(* FILL IN HERE *)
+      - remains true
 
     [] *)
 
@@ -619,7 +747,9 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-(* FILL IN HERE *)
+    - progress : test zro tru fls : Bool but stuck
+    - preservation : test tru zro fls : Bool, test tru zro fls -> zro,
+      but zro \in Nat by T_Zro.
 
     [] *)
 
@@ -632,8 +762,7 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
 
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-(* FILL IN HERE *)
-
+    - preservation : |- prd zro \in Bool, prd zro -> zro but |- zro \in Nat
     [] *)
 
 (** **** Exercise: 3 stars, standard, optional (more_variations)  
@@ -654,7 +783,7 @@ Definition manual_grade_for_variation2 : option (nat*string) := None.
     be undefined, rather than being defined to be [zro].  Can we
     achieve this simply by removing the rule from the definition of
     [step]?  Would doing so create any problems elsewhere?
-
+  - progress : |- prd zro \in Nat, but stuck
 (* FILL IN HERE *)
 *)
 (* Do not modify the following line: *)

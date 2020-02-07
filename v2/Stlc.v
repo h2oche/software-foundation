@@ -402,15 +402,64 @@ where "'[' x ':=' s ']' t" := (subst x s t).
 Inductive substi (s : tm) (x : string) : tm -> tm -> Prop :=
   | s_var1 :
       substi s x (var x) s
-  (* FILL IN HERE *)
-.
+  | s_var2 : forall y,
+      x <> y ->
+      substi s x (var y) (var y)
+  | s_abs1 : forall T bodyX,
+      substi s x (abs x T bodyX) (abs x T bodyX)
+  | s_abs2 : forall y T bodyY bodyY',
+      x <> y ->
+      substi s x bodyY bodyY' ->
+      substi s x (abs y T bodyY) (abs y T bodyY')
+  | s_app: forall ftm ftm' atm atm',
+      substi s x ftm ftm' ->
+      substi s x atm atm' ->
+      substi s x (app ftm atm) (app ftm' atm')
+  | s_tru :
+      substi s x tru tru
+  | s_fls :
+      substi s x fls fls
+  | s_test : forall t1 t2 t3 t1' t2' t3',
+      substi s x t1 t1' ->
+      substi s x t2 t2' ->
+      substi s x t3 t3' ->
+      substi s x (test t1 t2 t3) (test t1' t2' t3').
 
 Hint Constructors substi.
 
 Theorem substi_correct : forall s x t t',
   [x:=s]t = t' <-> substi s x t t'.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof with auto.
+  intros s x0 t t'.
+  split.
+  - generalize dependent s.
+    generalize dependent t'.
+    induction t; intros s' t' H.
+    + inversion H; subst. simpl.
+      destruct (eqb_string x0 s) eqn:E.
+      * apply eqb_string_true_iff in E. subst...
+      * apply eqb_string_false_iff in E...
+    + inversion H; subst. simpl.
+      apply s_app...
+    + inversion H; subst. simpl.
+      destruct (eqb_string x0 s) eqn:E.
+      * apply eqb_string_true_iff in E. subst...
+      * apply eqb_string_false_iff in E...
+    + inversion H; subst. simpl...
+    + inversion H; subst. simpl...
+    + inversion H; subst. simpl. apply s_test...
+  - intro Hsub.
+    induction Hsub.
+    + simpl. rewrite <- eqb_string_refl. reflexivity.
+    + simpl. apply eqb_string_false_iff in H. rewrite H. reflexivity.
+    + simpl. rewrite <- eqb_string_refl. reflexivity.
+    + simpl. apply eqb_string_false_iff in H. rewrite H.
+      rewrite IHHsub. reflexivity.
+    + simpl. rewrite IHHsub1. rewrite IHHsub2. reflexivity.
+    + simpl. reflexivity.
+    + simpl. reflexivity.
+    + simpl. rewrite IHHsub1. rewrite IHHsub2. rewrite IHHsub3. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -603,13 +652,17 @@ Lemma step_example5 :
        app (app idBBBB idBB) idB
   -->* idB.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step.
+    apply ST_App1. apply ST_AppAbs. auto.
+  simpl. eapply multi_step.
+    apply ST_AppAbs. auto.
+  simpl. apply multi_refl.
+Qed.
 
 Lemma step_example5_with_normalize :
        app (app idBBBB idBB) idB
   -->* idB.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. normalize. Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -742,7 +795,19 @@ Example typing_example_2_full :
           (app (var y) (app (var y) (var x))))) \in
     (Arrow Bool (Arrow (Arrow Bool Bool) Bool)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply T_Abs.
+  apply T_Abs.
+  apply (T_App Bool Bool
+                (y |-> Arrow Bool Bool; x |-> Bool)
+                (var y) (app (var y) (var x))).
+  + apply T_Var. rewrite update_eq. reflexivity.
+  + apply (T_App Bool Bool
+                (y |-> Arrow Bool Bool; x |-> Bool)
+                (var y) (var x)).
+    * apply T_Var. rewrite update_eq. reflexivity.
+    * rewrite update_permute. apply T_Var. reflexivity.
+      intro contra. inversion contra.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (typing_example_3)  
@@ -764,7 +829,19 @@ Example typing_example_3 :
                (app (var y) (app (var x) (var z)))))) \in
       T.
 Proof with auto.
-  (* FILL IN HERE *) Admitted.
+  eapply ex_intro.
+  apply T_Abs.
+  apply T_Abs.
+  apply T_Abs.
+  eapply T_App.
+    apply T_Var. rewrite update_permute. reflexivity.
+    intro contra. inversion contra.
+  eapply T_App.
+    apply T_Var. rewrite update_neq. rewrite update_neq. reflexivity.
+    intro contra. inversion contra.
+    intro contra. inversion contra.
+    apply T_Var. rewrite update_eq. reflexivity.
+Qed.
 (** [] *)
 
 (** We can also show that some terms are _not_ typable.  For example, 
@@ -808,7 +885,23 @@ Example typing_nonexample_3 :
              (app (var x) (var x))) \in
           T).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros contra. inversion contra. clear contra.
+  inversion H. subst. clear H.
+  inversion H0. subst. clear H0.
+  inversion H5. subst. clear H5.
+  inversion H2. subst. clear H2.
+  inversion H4. subst. clear H4.
+  rewrite H2 in H1.
+  inversion H1.
+  clear H1; clear H2; clear x0.
+
+  (* T11 = Arrow T11 T12 is contradiction *)
+  generalize dependent T12.
+  induction T11; intros T12 contra.
+  - inversion contra.
+  - inversion contra; subst; clear contra.
+    apply IHT11_1 in H0. contradiction.
+Qed.
 (** [] *)
 
 End STLC.
