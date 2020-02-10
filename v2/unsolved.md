@@ -25,3 +25,7 @@
 
 * Types.v
 - prog_pres_bigstep
+
+* StlcProp.v
+- stlc_variation\*
+- stlc_arithmetic

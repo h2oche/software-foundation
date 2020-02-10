@@ -141,7 +141,38 @@ Theorem progress' : forall t T,
 Proof.
   intros t.
   induction t; intros T Ht; auto.
-  (* FILL IN HERE *) Admitted.
+  - inversion Ht; subst. inversion H1.
+  - right.
+    inversion Ht; subst.
+    assert (H2': (empty |- t1 \in Arrow T11 T)). auto.
+    assert (H4': (empty |- t2 \in T11)). auto.
+    apply IHt1 in H2.
+    apply IHt2 in H4.
+    destruct H2. 
+    + assert (exists x0 t0, t1 = abs x0 T11 t0).
+      eapply canonical_forms_fun; eauto.
+      destruct H0 as [x0 [t0 Heq]]. subst.
+      destruct H4.
+      * exists ([x0:=t2]t0). auto.
+      * destruct H0. exists (app (abs x0 T11 t0) x1). auto.
+    + destruct H.
+      exists (app x0 t2). auto.
+  - right.
+    inversion Ht; subst.
+    assert (H1': (empty |- t1 \in Bool)). auto.
+    assert (H3': (empty |- t2 \in T)). auto.
+    assert (H5': (empty |- t3 \in T)). auto.
+    apply IHt1 in H3.
+    destruct H3.
+    + eapply canonical_forms_bool in H1'.
+      destruct H1';subst.
+      * exists t2. auto.
+      * exists t3. auto.
+      * assumption.
+    + destruct H.
+      exists (test x0 t2 t3).
+      auto.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -315,7 +346,12 @@ Corollary typable_empty__closed : forall t T,
     empty |- t \in T  ->
     closed t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold closed, not.
+  intros t T H1 x contra.
+  apply (free_in_context x t T empty) in contra.
+  destruct contra. inversion H.
+  assumption.
+Qed.
 (** [] *)
 
 (** Sometimes, when we have a proof of some typing relation
@@ -384,7 +420,8 @@ Proof with eauto.
     (* the only tricky step... the [Gamma'] we use to
        instantiate is [x|->T11;Gamma] *)
     unfold update. unfold t_update. destruct (eqb_string x0 x1) eqn: Hx0x1...
-    rewrite eqb_string_false_iff in Hx0x1. auto.
+    rewrite eqb_string_false_iff in Hx0x1.
+    apply H0. apply afi_abs...
   - (* T_App *)
     apply T_App with T11...
 Qed.
@@ -599,7 +636,10 @@ Qed.
     You can state your counterexample informally in words, with a brief 
     explanation. *)
 
-(* FILL IN HERE *)
+    (* Answer : 
+    (\x:Bool.y) ((\x:Bool.x) tru) --> (\x:Bool.y) tru
+    (\x:Bool.x) tru : Bool
+    (\x:Bool.y) ((\x:Bool.x) tru) is not typable *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_subject_expansion_stlc : option (nat*string) := None.
@@ -620,11 +660,18 @@ Corollary soundness : forall t t' T,
   empty |- t \in T ->
   t -->* t' ->
   ~(stuck t').
-Proof.
+Proof with auto.
   intros t t' T Hhas_type Hmulti. unfold stuck.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
+  (* Intuition : stuck t' is contradiction *)
   induction Hmulti.
-  (* FILL IN HERE *) Admitted.
+  - apply progress in Hhas_type. destruct Hhas_type.
+    + apply Hnot_val in H. contradiction.
+    + apply Hnf in H. contradiction.
+  - apply preservation with (t':=y0) in Hhas_type.
+    + apply IHHmulti; assumption.
+    + assumption.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -640,7 +687,23 @@ Theorem unique_types : forall Gamma e T T',
   Gamma |- e \in T' ->
   T = T'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros.
+  (* generalize dependent Gamma. *)
+  generalize dependent T'.
+  induction H; intros; try solve [inversion H0; auto].
+  - inversion H0; subst. rewrite H in H3. inversion H3; subst.
+    reflexivity.
+  - inversion H0; subst. apply IHhas_type in H6. subst.
+    reflexivity.
+  - inversion H1; subst.
+    apply IHhas_type1 in H5;
+    apply IHhas_type2 in H7.
+    inversion H5; subst. reflexivity.
+  - inversion H2; subst.
+    apply IHhas_type1 in H7;
+    apply IHhas_type2 in H9;
+    apply IHhas_type3 in H10; subst; reflexivity.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
