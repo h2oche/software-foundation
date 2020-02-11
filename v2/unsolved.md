@@ -33,3 +33,7 @@
 * Typechecking.v
 - stlc_step_function
 - stlc_impl
+
+* References.v
+- store_not_unique
+- garabage_collector

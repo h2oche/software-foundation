@@ -444,7 +444,17 @@ Definition tseq t1 t2 :=
 
 would it behave the same? *)
 
-(* FILL IN HERE *)
+(* No
+Counter Example:
+a = newarray _;
+b = newarray _;
+update a 1 1; // a := \n:Nat. if equal 1 n then 1 else (!a) n
+b := (!a) // b := \n:Nat. if equal 1 n then 1 else (!a) n
+update a 2 2; // a := \n:Nat. if equal 2 n then 2 else (!a) n
+(!b) 2 // compact yields 2, which should be 0
+
+compact version makes implicit communication channels between array.
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_compact_update : option (nat*string) := None.
@@ -501,7 +511,14 @@ Definition manual_grade_for_compact_update : option (nat*string) := None.
 
     Show how this can lead to a violation of type safety. *)
 
-(* FILL IN HERE *)
+(*
+x := 3; // x : Ref Nat
+y := x; // y : Ref Ref Nat
+dealloc x;
+alloc z; // incidently allocated to same cell
+z := tru // z : Ref Bool
+!!y + 3 // type error in runtime
+ *)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_type_safety_violation : option (nat*string) := None.
@@ -1875,26 +1892,45 @@ Qed.
     behaves like the factorial.  Just uncomment the example below to make
     sure it gives the correct result when applied to the argument
     [4].) *)
+Definition fac_func : tm :=
+  (abs "n" Nat (test0 (var "n")
+                  (const 1)
+                  (mlt (var "n") (app (deref (var "fac")) (prd (var "n")))))).
 
-Definition factorial : tm
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition factorial := 
+  app
+    (abs "fac" (Ref (Arrow Nat Nat))
+      (tseq (assign (var "fac") fac_func)
+            (deref (var "fac"))))
+    (ref (abs "dumb" Nat (const 1))).
 
 Lemma factorial_type : empty; nil |- factorial \in (Arrow Nat Nat).
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  unfold factorial.
+  eapply T_App...
+  eapply T_Abs...
+  unfold tseq.
+  eapply T_App...
+  unfold fac_func.
+  eapply T_Assign...
+    apply T_Var. apply update_eq.
+  eapply T_Abs...
+  eapply T_If0...
+  eapply T_Mult...
+  eapply T_App...
+  eapply T_Deref...
+Qed.
 
 (** If your definition is correct, you should be able to just
     uncomment the example below; the proof should be fully
     automatic using the [reduce] tactic. *)
 
-(* 
+
 Lemma factorial_4 : exists st,
   app factorial (const 4) / nil -->* const 24 / st.
 Proof.
   eexists. unfold factorial. reduce.
 Qed.
-
-    [] *)
 
 (* ################################################################# *)
 (** * Additional Exercises *)
