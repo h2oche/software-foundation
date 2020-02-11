@@ -29,3 +29,7 @@
 * StlcProp.v
 - stlc_variation\*
 - stlc_arithmetic
+
+* Typechecking.v
+- stlc_step_function
+- stlc_impl

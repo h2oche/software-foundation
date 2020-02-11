@@ -1321,17 +1321,6 @@ Inductive has_type : context -> tm -> ty -> Prop :=
   (* Add rules for the following extensions. *)
 
   (* pairs *)
-  (*                Gamma |- t1 \in T1     Gamma |- t2 \in T2
-               -----------------------------------------               (T_Pair)
-                       Gamma |- (t1,t2) \in T1*T2
-
-                        Gamma |- t \in T1*T2
-                        ---------------------                          (T_Fst)
-                        Gamma |- t.fst \in T1
-
-                        Gamma |- t \in T1*T2
-                        ---------------------                          (T_Snd)
-                        Gamma |- t.snd \in T2 *)
   | T_Pair : forall Gamma t1 T1 t2 T2,
       Gamma |- t1 \in T1 ->
       Gamma |- t2 \in T2 ->
@@ -1344,9 +1333,6 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- (snd t) \in T2
 
   (* let *)
-  (*              Gamma |- t1 \in T1      x|->T1; Gamma |- t2 \in T2
-             --------------------------------------------------        (T_Let)
-                        Gamma |- let x=t1 in t2 \in T2 *)
   | T_Let : forall Gamma t1 T1 t2 T2 x,
       Gamma |- t1 \in T1 ->
       (update Gamma x T1) |- t2 \in T2 ->
