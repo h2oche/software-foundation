@@ -1008,7 +1008,19 @@ Lemma sub_inversion_Bool : forall U,
 Proof with auto.
   intros U Hs.
   remember Bool as V.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; subst.
+  (* S_Refl *)
+  - reflexivity.
+  (* S_Trans *)
+  - assert (Haux: Bool = Bool)...
+    apply IHHs2 in Haux.
+    remember (U=Bool) as E.
+    apply IHHs1 in Haux; subst...
+  (* S_Top *)
+  - inversion HeqV.
+  (* S_Arrow *)
+  - inversion HeqV.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (sub_inversion_arrow)  *)
@@ -1020,7 +1032,21 @@ Proof with eauto.
   intros U V1 V2 Hs.
   remember (Arrow V1 V2) as V.
   generalize dependent V2. generalize dependent V1.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; intros; inversion HeqV; subst.
+  (* S_Refl *)
+  - eapply ex_intro. eapply ex_intro.
+    split. apply H.
+    split...
+  (* S_Trans *)
+  - apply IHHs2 in H; clear IHHs2.
+    destruct H as [U1 [U2 [H1 [H2 H3]]]]; subst.
+    assert (Haux: Arrow U1 U2 = Arrow U1 U2)...
+    apply IHHs1 in Haux; clear IHHs1.
+    destruct Haux as [S1 [S2 [H4 [H5 H6]]]]; subst.
+    exists S1. exists S2...
+  (* S_Arrow *)
+  - exists S1. exists S2...
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1057,8 +1083,16 @@ Lemma canonical_forms_of_arrow_types : forall Gamma s T1 T2,
   exists x S1 s2,
      s = abs x S1 s2.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  intros.
+  remember (Arrow T1 T2) as V.
+  (* generalize dependent s. *)
+  generalize dependent T1.
+  generalize dependent T2.  
+  induction H; intros; eauto; try solve_by_invert.
+  - subst. apply sub_inversion_arrow in H1.
+    destruct H1 as [U1 [U2 [H2 [H3 H4]]]].
+    eapply IHhas_type...
+Qed.
 
 (** Similarly, the canonical forms of type [Bool] are the constants
     [tru] and [fls]. *)

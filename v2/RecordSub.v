@@ -250,7 +250,7 @@ Example subtyping_example_0 :
 Proof.
   apply S_Arrow.
     apply S_Refl. auto.
-    unfold TRcd_kj, TRcd_j. apply S_RcdWidth; auto.
+    unfold TRcd_kj, TRcd_j. apply S_RcdWidth. auto.
 Qed.
 
 (** The following facts are mostly easy to prove in Coq.  To get full
@@ -262,7 +262,14 @@ Example subtyping_example_1 :
   subtype TRcd_kj TRcd_j.
 (* {k:A->A,j:B->B} <: {j:B->B} *)
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  eapply S_Trans.
+    apply S_RcdPerm...
+    apply eqb_neq. reflexivity.
+  eapply S_Trans.
+    eapply S_RcdDepth. apply S_Refl... apply S_RcdWidth...
+    auto. auto.
+  unfold TRcd_j...
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (subtyping_example_2)  *)
@@ -271,7 +278,10 @@ Example subtyping_example_2 :
           (Arrow (Arrow C C) TRcd_j).
 (* Top->{k:A->A,j:B->B} <: (C->C)->{j:B->B} *)
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  eapply S_Arrow.
+    apply S_Top...
+  apply subtyping_example_1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (subtyping_example_3)  *)
@@ -280,7 +290,8 @@ Example subtyping_example_3 :
           (Arrow (RCons k B RNil) RNil).
 (* {}->{j:A} <: {k:B}->{} *)
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  eapply S_Arrow...
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (subtyping_example_4)  *)
@@ -289,7 +300,18 @@ Example subtyping_example_4 :
           (RCons z C (RCons y B (RCons x A RNil))).
 (* {x:A,y:B,z:C} <: {z:C,y:B,x:A} *)
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  eapply S_Trans.
+    apply S_RcdPerm...
+    apply eqb_neq...
+  eapply S_Trans.
+    apply S_RcdDepth. apply S_Refl...
+    apply S_RcdPerm... apply eqb_neq...
+    auto. auto.
+  eapply S_Trans.
+    apply S_RcdPerm...
+    apply eqb_neq...
+  apply S_Refl...
+Qed.
 (** [] *)
 
 End Examples.
@@ -314,7 +336,7 @@ Proof with eauto.
   induction Hsub;
     intros; try (destruct IHHsub1; destruct IHHsub2)...
   - (* S_RcdPerm *)
-    split... inversion H. subst. inversion H5...  Qed.
+    split... inversion H. subst. inversion H5; subst...  Qed.
 
 Lemma wf_rcd_lookup : forall i T Ti,
   well_formed_ty T ->
@@ -341,7 +363,7 @@ Lemma rcd_types_match : forall S T i Ti,
   subtype S T ->
   Tlookup i T = Some Ti ->
   exists Si, Tlookup i S = Some Si /\ subtype Si Ti.
-Proof with (eauto using wf_rcd_lookup).
+Proof with (eauto using wf_rcd_lookup).      
   intros S T i Ti Hsub Hget. generalize dependent Ti.
   induction Hsub; intros Ti Hget;
     try solve_by_invert.
@@ -393,7 +415,16 @@ Proof with eauto.
   intros U V1 V2 Hs.
   remember (Arrow V1 V2) as V.
   generalize dependent V2. generalize dependent V1.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; intros; inversion HeqV; subst.
+  (* S_Refl *)
+  - inversion H; subst. exists V1. exists V2. split...
+  (* S_Trans *)
+  - apply IHHs2 in H. destruct H as [U1 [U2 [H1 [H2 H3]]]].
+    apply IHHs1 in H1. destruct H1 as [U3 [U4 [H4 [H5 H6]]]].
+    exists U3. exists U4. split...
+  (* S_Arrow *)
+  - exists S1. exists S2. split...
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -459,7 +490,17 @@ Example typing_example_0 :
            TRcd_kj.
 (* empty |- {k=(\z:A.z), j=(\z:B.z)} : {k:A->A,j:B->B} *)
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply T_RCons.
+    apply T_Abs. apply wfBase.
+    apply T_Var. apply update_eq. apply wfBase.
+  apply T_RCons.
+    apply T_Abs. apply wfBase.
+    apply T_Var. apply update_eq. apply wfBase.
+    apply T_RNil.
+  apply RTnil. apply rtnil.
+  unfold TRcd_j. apply RTcons.
+  apply rtcons.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (typing_example_1)  *)
@@ -472,7 +513,16 @@ Example typing_example_1 :
               {k=(\z:A.z), j=(\z:B.z)}
          : B->B *)
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  eapply T_App.
+    apply T_Abs...
+    unfold TRcd_j. apply wfRCons...
+  unfold trcd_kj. unfold TRcd_j.
+  eapply T_Sub. apply T_RCons...
+  eapply S_Trans.
+    apply S_RcdPerm...
+    apply eqb_neq...
+  eapply S_RcdDepth...
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (typing_example_2)  *)
@@ -556,8 +606,29 @@ Lemma canonical_forms_of_arrow_types : forall Gamma s T1 T2,
      value s ->
      exists x S1 s2,
         s = abs x S1 s2.
-Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+Proof with eauto. 
+  intros Gamma s T1 T2 Hty Hval.
+  remember (Arrow T1 T2) as T.
+  generalize dependent T1.
+  generalize dependent T2.
+  induction Hty;
+    intros; inversion HeqT; subst;
+    try (inversion Hval; subst).
+  (* T_Abs *)
+  - exists x. exists T1. exists t12...
+  (* T_Sub *)
+  - apply sub_inversion_arrow in H. destruct H as [U1 [U2 [A [B C]]]].
+    destruct (IHHty Hval U2 U1 A) as [x0 [s1 [s2 ans]]].
+    exists x0. exists s1. exists s2...
+  (* T_RNil *)
+  - apply sub_inversion_arrow in H. destruct H as [U1 [U2 [A [B C]]]].
+    destruct (IHHty Hval U2 U1 A) as [x0 [s1 [s2 ans]]].
+    exists x0. exists s1. exists s2...
+  (* T_RCons *)
+  - apply sub_inversion_arrow in H. destruct H as [U1 [U2 [A [B C]]]].
+    destruct (IHHty Hval U2 U1 A) as [x0 [s1 [s2 ans]]].
+    exists x0. exists s1. exists s2...
+Qed.
 (** [] *)
 
 Theorem progress : forall t T,
